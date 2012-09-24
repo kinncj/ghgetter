@@ -1,0 +1,57 @@
+#!/usr/bin/env php
+<?php
+if (PHP_SAPI !== 'cli') {
+    die ('This is a php-cli application');
+}
+
+$username = null;
+
+function getUsername(&$username)
+{
+    $username = readline("Type the github username/org: ");
+    $username = trim($username);
+    if ($username == "") {
+        getUsername($username);
+    }
+}
+getUsername($username);
+
+$directory = null;
+
+function getDirectory(&$directory, $title = "Type the destination directory: ")
+{
+    $directory = readline($title);
+    $directory = trim($directory);
+    if ($directory == "" || !file_exists($directory)) {
+        getDirectory($directory, "Type a valid destination directory: ");
+    }
+}
+getDirectory($directory);
+
+define('GITHUB_URL', "https://api.github.com/users/{$username}/repos");
+
+define('DESTINATION', $directory);
+
+function fetchData()
+{
+    $directory    = DESTINATION;
+    $url          = GITHUB_URL;
+    $cmd          = "git clone  '%repo_url%' '{$directory}/%directory%'";
+    $repositories = json_decode(file_get_contents($url));
+    $commands     = array();
+
+    foreach ($repositories as $repository) {
+        $commands[] = str_replace(
+                                array('%repo_url%', '%directory%'), 
+                                array($repository->git_url, $repository->name), 
+                                $cmd
+                               );
+    }
+    
+    $cmd = implode('; ',$commands);
+    exec($cmd);
+}
+
+fetchData();
+
+die("Thanks for using ghgetter\n");
